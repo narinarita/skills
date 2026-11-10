@@ -5,7 +5,7 @@ Claude Code のスキル。PR やトピックの解説ページを「主張（�
 ## インストール
 
 ```bash
-git clone https://github.com/KimiMasa1021/abstract-concrete.git ~/.claude/skills/abstract-concrete
+git clone https://github.com/narinarita/abstract-concrete.git ~/.claude/skills/abstract-concrete
 ```
 
 ## 使い方

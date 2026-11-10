@@ -17,3 +17,13 @@ git clone https://github.com/narinarita/abstract-concrete.git ~/.claude/skills/a
 引数なしなら、カレントブランチの PR を対象にします。
 
 詳しい決まりは [SKILL.md](SKILL.md) を参照してください。
+
+## ファイル
+
+- [SKILL.md](SKILL.md): ページの決まり、手順、セルフチェック。
+- [template.html](template.html): ページの雛形。開閉・用語・全体像の動きを実装した `<script>` を含みます。
+
+## あると使うもの（なくても動きます）
+
+- Artifact ツールと `artifact-design` スキル: あれば Artifact として公開します。なければ HTML ファイルを保存します。
+- `yomiyasu` スキル: あれば日本語の推敲に使います。

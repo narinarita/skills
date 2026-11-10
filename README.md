@@ -22,8 +22,10 @@ git clone https://github.com/narinarita/abstract-concrete.git ~/.claude/skills/a
 
 - [SKILL.md](SKILL.md): ページの決まり、手順、セルフチェック。
 - [template.html](template.html): ページの雛形。開閉・用語・全体像の動きを実装した `<script>` を含みます。
+- [check.py](check.py): 作ったページの字数・文の長さ・組数・id の対応・`<script>` の一致などを確かめます。`python3 check.py <page.html>` で実行し、NG があれば終了コード 1 を返します。標準ライブラリだけで動きます。
 
 ## あると使うもの（なくても動きます）
 
 - Artifact ツールと `artifact-design` スキル: あれば Artifact として公開します。なければ HTML ファイルを保存します。
 - `yomiyasu` スキル: あれば日本語の推敲に使います。
+- python3: あれば `check.py` でセルフチェックを機械的に行います。

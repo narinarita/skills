@@ -101,7 +101,10 @@
   .facts strong { display: block; font-size: 24px; line-height: 1.3; }
   code { font-family: ui-monospace, Menlo, monospace; font-size: 0.9em; }
 
-  @media (max-width: 520px) { .before-after { grid-template-columns: 1fr; } }
+  @media (max-width: 520px) {
+    .before-after { grid-template-columns: 1fr; }
+    .term .def { position: fixed; left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; max-width: none; }
+  }
   @media print {
     .concrete[hidden] { display: block !important; }
     .controls, .pair-toggle { display: none; }
@@ -134,7 +137,17 @@
     <span class="status" id="status" role="status"></span>
   </div>
 
-  <!-- 前提ペアは data-kind="premise" にして本題の前に置く。番号は「前提」と書く -->
+  <!--
+    前提ペアは本題の前に置き、data-kind="premise" と premise-N の id を付ける。番号の代わりに「前提」と書く。
+    <section class="pair" id="premise-1" data-kind="premise">
+      <div class="count">前提</div>
+      <div class="abstract">
+        <p>{{本題を読むのに要る背景}}</p>
+        <button type="button" class="pair-toggle" aria-controls="premise-1-concrete" aria-label="証拠を開閉">−</button>
+      </div>
+      <div class="concrete" id="premise-1-concrete"> ...4形式のどれか... </div>
+    </section>
+  -->
   <section class="pair" id="pair-1" data-kind="main">
     <div class="count">1 / 4</div>
     <div class="abstract">
@@ -237,13 +250,20 @@
   }
   function isOpen(pair) { return !pair.querySelector('.concrete').hidden; }
 
-  function setAll(open) {
-    showingAll = open;
-    pairs.forEach(function (pair) { setOpen(pair, open); });
-    allButton.textContent = open ? '抽象だけ表示' : 'すべて表示';
-    status.textContent = open
+  function sync() {
+    var opened = pairs.filter(isOpen).length;
+    showingAll = opened === pairs.length;
+    allButton.textContent = showingAll ? '抽象だけ表示' : 'すべて表示';
+    status.textContent = showingAll
       ? 'すべての証拠を表示しています。'
-      : '抽象だけの1分版を表示しています。抽象を押すと、その証拠が開きます。';
+      : opened === 0
+        ? '抽象だけの1分版を表示しています。抽象を押すと、その証拠が開きます。'
+        : pairs.length + ' 組のうち ' + opened + ' 組の証拠を開いています。';
+  }
+
+  function setAll(open) {
+    pairs.forEach(function (pair) { setOpen(pair, open); });
+    sync();
   }
 
   function closeTerms(except) {
@@ -255,7 +275,9 @@
   pairs.forEach(function (pair) {
     pair.querySelector('.abstract').addEventListener('click', function (event) {
       if (event.target.closest('.term')) return;
+      if (String(window.getSelection()).length) return;
       setOpen(pair, !isOpen(pair));
+      sync();
     });
   });
 
@@ -272,13 +294,13 @@
 
   function openFromHash() {
     var target = location.hash && document.getElementById(location.hash.slice(1));
-    if (target && target.classList.contains('pair')) setOpen(target, true);
+    if (target && target.classList.contains('pair')) { setOpen(target, true); sync(); }
   }
   window.addEventListener('hashchange', openFromHash);
   document.querySelectorAll('.overview a').forEach(function (link) {
     link.addEventListener('click', function () {
       var target = document.getElementById(link.getAttribute('href').slice(1));
-      if (target) setOpen(target, true);
+      if (target) { setOpen(target, true); sync(); }
     });
   });
 

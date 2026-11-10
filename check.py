@@ -109,10 +109,15 @@ def main():
     source = page.read_text(encoding="utf-8")
     root = parse(page)
     results = []
+    warnings = []
 
     def report(ok, item, detail):
         results.append(ok)
         print(("OK  " if ok else "NG  ") + item + (": " + detail if detail else ""))
+
+    def warn(item, detail):
+        warnings.append(item)
+        print("WARN " + item + ": " + detail)
 
     skip_def = lambda n: "def" in n.classes or "pair-toggle" in n.classes
 
@@ -137,6 +142,11 @@ def main():
         long = [s for s in ss if chars(s) > LIMIT_SENTENCE]
         report(not long, name + " の文の長さ（{}字以内）".format(LIMIT_SENTENCE),
                " / ".join("{}字「{}…」".format(chars(s), s[:15]) for s in long))
+        # 英字に続く数字（Auth0、S3 などの名前）は数えない
+        nums = re.findall(r"(?<![A-Za-z0-9０-９])[0-9０-９][0-9０-９,.，．]*", abstract)
+        if nums:
+            warn(name + " の抽象に数字がある",
+                 "「{}」。具体の要約になっていないか、事実から言える性質を書けないか確かめる".format("、".join(nums)))
 
     # 組数と並び（項目 4）
     kinds = [p.attrs.get("data-kind", "main") for p in pairs]
@@ -200,7 +210,7 @@ def main():
                "末尾の <script> が雛形と同じ", "")
 
     ng = results.count(False)
-    print("\n{} 項目中 NG {} 件".format(len(results), ng))
+    print("\n{} 項目中 NG {} 件、WARN {} 件（WARN は手がかり。読んで判断する）".format(len(results), ng, len(warnings)))
     return 1 if ng else 0
 
 

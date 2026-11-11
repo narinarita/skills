@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  abstract-concrete の雛形。
+  - {{...}} を中身に置き換え、ペアは必要な数だけ複製・削除する。
+  - 見た目（:root の値、余白、書体）は変えてよい。
+  - 末尾の <script> と、それが参照する class 名・data 属性・id は変えない。
+    開閉の動きはここで保証しているので、作り直さない。
+-->
+<title>{{2〜4語のページ名}}</title>
+<style>
+  :root {
+    --bg: #fbfaf7; --surface: #ffffff; --text: #1c1b19; --muted: #6b6860;
+    --line: #dedbd2; --accent: #2f5fd0; --accent-soft: #e8eefc;
+    --before: #b4532a; --after: #1f7a4d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --surface: #1f1f1c; --text: #ecebe6; --muted: #a09d94;
+      --line: #36352f; --accent: #8fb0ff; --accent-soft: #232b40;
+      --before: #e39a76; --after: #73c79a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161614; --surface: #1f1f1c; --text: #ecebe6; --muted: #a09d94;
+    --line: #36352f; --accent: #8fb0ff; --accent-soft: #232b40;
+    --before: #e39a76; --after: #73c79a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.8 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 80px; }
+  a { color: var(--accent); }
+  .eyebrow, .label, .count, .status, .target, figcaption { color: var(--muted); font-size: 13px; }
+  h1 { font-size: 28px; line-height: 1.4; margin: 4px 0 8px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 40px 0 8px; font-weight: 600; }
+  .summary { font-size: 18px; font-weight: 600; margin: 24px 0; }
+
+  .overview ol { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .overview a {
+    display: block; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px;
+  }
+  .overview a:hover, .overview a:focus-visible { border-color: var(--accent); }
+
+  .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 32px 0 8px; }
+  #toggle-all {
+    font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent-soft); color: var(--text);
+  }
+
+  .pair { margin: 24px 0; scroll-margin-top: 16px; }
+  .abstract {
+    display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+    border-left: 4px solid var(--accent); padding: 4px 0 4px 16px;
+  }
+  .abstract p { margin: 0; font-weight: 700; font-size: 18px; flex: 1; }
+  .pair-toggle {
+    font: inherit; font-size: 20px; line-height: 1; width: 32px; height: 32px; flex: none;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+    color: var(--text); cursor: pointer;
+  }
+  .concrete {
+    margin: 12px 0 0 20px; padding: 16px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--surface); overflow-x: auto;
+  }
+  .concrete figure { margin: 0; }
+  figcaption { margin-top: 8px; }
+
+  .term {
+    position: relative; font: inherit; color: inherit; background: none; border: 0; padding: 0;
+    border-bottom: 1px dashed var(--accent); cursor: help;
+  }
+  .term .def {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 2; width: max-content; max-width: 280px;
+    margin-top: 6px; padding: 8px 12px; border-radius: 8px; text-align: left;
+    background: var(--text); color: var(--bg); font-size: 13px; font-weight: 400; line-height: 1.6;
+  }
+  .term:hover .def, .term:focus-visible .def, .term.open .def { display: block; }
+
+  /* 具体ブロックの4形式 */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .before-after > div { padding: 12px; border-radius: 8px; border: 1px solid var(--line); }
+  .before-after .before .label { color: var(--before); font-weight: 700; }
+  .before-after .after .label { color: var(--after); font-weight: 700; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  .steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .steps li { counter-increment: step; display: flex; gap: 12px; }
+  .steps li::before {
+    content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent-soft); text-align: center; line-height: 26px; font-size: 13px;
+  }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .facts > div { padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+  .facts strong { display: block; font-size: 24px; line-height: 1.3; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 0.9em; }
+
+  @media (max-width: 520px) {
+    .before-after { grid-template-columns: 1fr; }
+    .term .def { position: fixed; left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; max-width: none; }
+  }
+  @media print {
+    .concrete[hidden] { display: block !important; }
+    .controls, .pair-toggle { display: none; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">{{PR #番号 | TOPIC}}</div>
+    <h1>{{タイトル}}</h1>
+    <div class="target">対象: <a href="{{URL}}">{{PR URL・ファイルパスなど}}</a></div>
+  </header>
+
+  <p class="summary">{{一言で言うと。1〜2文}}</p>
+
+  <!-- 全体像。ペアが2組以下なら、この nav ごと消す -->
+  <nav class="overview" aria-label="全体像">
+    <ol>
+      <li><a href="#pair-1">{{ペア1の短い名前}}</a></li>
+      <li><a href="#pair-2">{{ペア2の短い名前}}</a></li>
+      <li><a href="#pair-3">{{ペア3の短い名前}}</a></li>
+      <li><a href="#pair-4">{{ペア4の短い名前}}</a></li>
+    </ol>
+    <p class="label">全体像。箱を押すと、そのペアへ移動します。</p>
+  </nav>
+
+  <div class="controls">
+    <button type="button" id="toggle-all">すべて表示</button>
+    <span class="status" id="status" role="status"></span>
+  </div>
+
+  <!--
+    前提ペアは本題の前に置き、data-kind="premise" と premise-N の id を付ける。番号の代わりに「前提」と書く。
+    <section class="pair" id="premise-1" data-kind="premise">
+      <div class="count">前提</div>
+      <div class="abstract">
+        <p>{{本題を読むのに要る背景}}</p>
+        <button type="button" class="pair-toggle" aria-controls="premise-1-concrete" aria-label="証拠を開閉">−</button>
+      </div>
+      <div class="concrete" id="premise-1-concrete"> ...4形式のどれか... </div>
+    </section>
+  -->
+  <section class="pair" id="pair-1" data-kind="main">
+    <div class="count">1 / 4</div>
+    <div class="abstract">
+      <p>{{主張：具体から言える性質・傾向・意味}}
+        <button type="button" class="term">{{用語}}<span class="def" role="tooltip">{{定義を1文で}}</span></button>
+      </p>
+      <button type="button" class="pair-toggle" aria-controls="pair-1-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-1-concrete">
+      <div class="label">before / after</div>
+      <figure>
+        <div class="before-after">
+          <div class="before"><div class="label">before</div>{{変更前}}</div>
+          <div class="after"><div class="label">after</div>{{変更後}}</div>
+        </div>
+        <figcaption>{{キャプション1文}}</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="pair" id="pair-2" data-kind="main">
+    <div class="count">2 / 4</div>
+    <div class="abstract">
+      <p>{{主張}}</p>
+      <button type="button" class="pair-toggle" aria-controls="pair-2-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-2-concrete">
+      <div class="label">値の表</div>
+      <figure>
+        <table>
+          <thead><tr><th>{{項目}}</th><th>{{値}}</th></tr></thead>
+          <tbody><tr><td>{{名前}}</td><td>{{値}}</td></tr></tbody>
+        </table>
+        <figcaption>{{キャプション1文}}</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="pair" id="pair-3" data-kind="main">
+    <div class="count">3 / 4</div>
+    <div class="abstract">
+      <p>{{主張}}</p>
+      <button type="button" class="pair-toggle" aria-controls="pair-3-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-3-concrete">
+      <div class="label">シナリオ</div>
+      <figure>
+        <ol class="steps">
+          <li>{{ステップ1}}</li>
+          <li>{{ステップ2}}</li>
+          <li>{{ステップ3}}</li>
+        </ol>
+        <figcaption>{{キャプション1文}}</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="pair" id="pair-4" data-kind="main">
+    <div class="count">4 / 4</div>
+    <div class="abstract">
+      <p>{{主張}}</p>
+      <button type="button" class="pair-toggle" aria-controls="pair-4-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-4-concrete">
+      <div class="label">数値・事実</div>
+      <figure>
+        <div class="facts">
+          <div><strong>{{数値}}</strong>{{何の数値か}}</div>
+          <div><strong>{{数値}}</strong>{{何の数値か}}</div>
+        </div>
+        <figcaption>{{キャプション1文と、数値の出どころ}}</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <h2>補足リンク</h2>
+  <ul>
+    <li><a href="{{URL}}">{{ペアに入らなかった情報}}</a></li>
+  </ul>
+
+  <h2>出典</h2>
+  <ul>
+    <li><a href="{{URL}}">{{材料にした PR・ファイル・資料}}</a></li>
+  </ul>
+</main>
+
+<!-- ここから下は変えない。JS が動かない環境では、証拠は開いたまま表示される -->
+<script>
+(function () {
+  var pairs = Array.prototype.slice.call(document.querySelectorAll('.pair'));
+  var allButton = document.getElementById('toggle-all');
+  var status = document.getElementById('status');
+  var showingAll = false;
+
+  function setOpen(pair, open) {
+    var toggle = pair.querySelector('.pair-toggle');
+    pair.querySelector('.concrete').hidden = !open;
+    toggle.textContent = open ? '−' : '+';
+    toggle.setAttribute('aria-expanded', String(open));
+  }
+  function isOpen(pair) { return !pair.querySelector('.concrete').hidden; }
+
+  function sync() {
+    var opened = pairs.filter(isOpen).length;
+    showingAll = opened === pairs.length;
+    allButton.textContent = showingAll ? '抽象だけ表示' : 'すべて表示';
+    status.textContent = showingAll
+      ? 'すべての証拠を表示しています。'
+      : opened === 0
+        ? '抽象だけの1分版を表示しています。抽象を押すと、その証拠が開きます。'
+        : pairs.length + ' 組のうち ' + opened + ' 組の証拠を開いています。';
+  }
+
+  function setAll(open) {
+    pairs.forEach(function (pair) { setOpen(pair, open); });
+    sync();
+  }
+
+  function closeTerms(except) {
+    document.querySelectorAll('.term.open').forEach(function (term) {
+      if (term !== except) term.classList.remove('open');
+    });
+  }
+
+  pairs.forEach(function (pair) {
+    pair.querySelector('.abstract').addEventListener('click', function (event) {
+      if (event.target.closest('.term')) return;
+      if (String(window.getSelection()).length) return;
+      setOpen(pair, !isOpen(pair));
+      sync();
+    });
+  });
+
+  document.addEventListener('click', function (event) {
+    var term = event.target.closest('.term');
+    closeTerms(term);
+    if (term) term.classList.toggle('open');
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeTerms(null);
+  });
+
+  allButton.addEventListener('click', function () { setAll(!showingAll); });
+
+  function openFromHash() {
+    var target = location.hash && document.getElementById(location.hash.slice(1));
+    if (target && target.classList.contains('pair')) { setOpen(target, true); sync(); }
+  }
+  window.addEventListener('hashchange', openFromHash);
+  document.querySelectorAll('.overview a').forEach(function (link) {
+    link.addEventListener('click', function () {
+      var target = document.getElementById(link.getAttribute('href').slice(1));
+      if (target) { setOpen(target, true); sync(); }
+    });
+  });
+
+  setAll(false);
+  openFromHash();
+})();
+</script>
+</body>
+</html>

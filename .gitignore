@@ -1,0 +1,11 @@
+# Claude Code の作業用 worktree とローカル設定
+.claude/worktrees/
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.pyc
+
+# Editor / OS
+.DS_Store
+.vscode/

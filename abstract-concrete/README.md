@@ -4,8 +4,16 @@ Claude Code のスキル。PR やトピックの解説ページを「主張（�
 
 ## インストール
 
+[`skills`](https://github.com/vercel-labs/skills) CLI で入れる:
+
 ```bash
-git clone https://github.com/narinarita/abstract-concrete.git ~/.claude/skills/abstract-concrete
+npx skills add narinarita/skills --skill abstract-concrete
+```
+
+フォルダをそのまま写す:
+
+```bash
+npx degit narinarita/skills/abstract-concrete ~/.claude/skills/abstract-concrete
 ```
 
 ## 使い方
@@ -23,6 +31,7 @@ git clone https://github.com/narinarita/abstract-concrete.git ~/.claude/skills/a
 - [SKILL.md](SKILL.md): ページの決まり、手順、セルフチェック。
 - [template.html](template.html): ページの雛形。開閉・用語・全体像の動きを実装した `<script>` を含みます。
 - [check.py](check.py): 作ったページの字数・文の長さ・組数・id の対応・`<script>` の一致などを確かめます。`python3 check.py <page.html>` で実行し、NG があれば終了コード 1 を返します。標準ライブラリだけで動きます。
+- [tests/fixtures/](tests/fixtures/): check.py を確かめる見本。リポジトリの `scripts/test_checks.py` から使います。
 
 ## あると使うもの（なくても動きます）
 

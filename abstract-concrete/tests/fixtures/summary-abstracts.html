@@ -1,0 +1,318 @@
+<title>Auth0 解説 版A</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+  :root {
+    --bg: #fbfaf7; --surface: #ffffff; --text: #1c1b19; --muted: #6b6860;
+    --line: #dedbd2; --accent: #2f5fd0; --accent-soft: #e8eefc;
+    --before: #b4532a; --after: #1f7a4d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161614; --surface: #1f1f1c; --text: #ecebe6; --muted: #a09d94;
+      --line: #36352f; --accent: #8fb0ff; --accent-soft: #232b40;
+      --before: #e39a76; --after: #73c79a; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161614; --surface: #1f1f1c; --text: #ecebe6; --muted: #a09d94;
+    --line: #36352f; --accent: #8fb0ff; --accent-soft: #232b40;
+    --before: #e39a76; --after: #73c79a; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.8 system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding-block: 40px 80px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  a { color: var(--accent); }
+  .eyebrow, .label, .count, .status, .target, figcaption { color: var(--muted); font-size: 13px; }
+  h1 { font-size: 28px; line-height: 1.4; margin: 4px 0 8px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 40px 0 8px; font-weight: 600; }
+  .summary { font-size: 18px; font-weight: 600; margin: 24px 0; }
+
+  .overview ol { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  .overview a {
+    display: block; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px;
+  }
+  .overview a:hover, .overview a:focus-visible { border-color: var(--accent); }
+
+  .controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 32px 0 8px; }
+  #toggle-all {
+    font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent-soft); color: var(--text);
+  }
+
+  .pair { margin: 24px 0; scroll-margin-top: 16px; }
+  .abstract {
+    display: flex; gap: 12px; align-items: flex-start; cursor: pointer;
+    border-left: 4px solid var(--accent); padding: 4px 0 4px 16px;
+  }
+  .abstract p { margin: 0; font-weight: 700; font-size: 18px; flex: 1; }
+  .pair-toggle {
+    font: inherit; font-size: 20px; line-height: 1; width: 32px; height: 32px; flex: none;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+    color: var(--text); cursor: pointer;
+  }
+  .concrete {
+    margin: 12px 0 0 20px; padding: 16px; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--surface); overflow-x: auto;
+  }
+  .concrete figure { margin: 0; }
+  figcaption { margin-top: 8px; }
+
+  .term {
+    position: relative; font: inherit; color: inherit; background: none; border: 0; padding: 0;
+    border-bottom: 1px dashed var(--accent); cursor: help;
+  }
+  .term .def {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 2; width: max-content; max-width: 280px;
+    margin-top: 6px; padding: 8px 12px; border-radius: 8px; text-align: left;
+    background: var(--text); color: var(--bg); font-size: 13px; font-weight: 400; line-height: 1.6;
+  }
+  .term:hover .def, .term:focus-visible .def, .term.open .def { display: block; }
+
+  /* 具体ブロックの4形式 */
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .before-after > div { padding: 12px; border-radius: 8px; border: 1px solid var(--line); }
+  .before-after .before .label { color: var(--before); font-weight: 700; }
+  .before-after .after .label { color: var(--after); font-weight: 700; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); }
+  .steps { list-style: none; counter-reset: step; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .steps li { counter-increment: step; display: flex; gap: 12px; }
+  .steps li::before {
+    content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent-soft); text-align: center; line-height: 26px; font-size: 13px;
+  }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .facts > div { padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+  .facts strong { display: block; font-size: 24px; line-height: 1.3; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 0.9em; }
+
+  @media (max-width: 520px) {
+    .before-after { grid-template-columns: 1fr; }
+    .term .def { position: fixed; left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; max-width: none; }
+  }
+  @media print {
+    .concrete[hidden] { display: block !important; }
+    .controls, .pair-toggle { display: none; }
+  }
+  .concrete { min-width: 0; }
+  h1 { text-wrap: balance; }
+  button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+<main>
+  <header>
+    <div class="eyebrow">版 A · 現状のスキルで生成</div>
+    <h1>Auth0</h1>
+    <div class="target">対象: <a href="https://auth0.com/docs/get-started/auth0-overview">Auth0（認証・認可のサービス）</a></div>
+  </header>
+
+  <p class="summary">Auth0 は、アプリに認証と認可の機能を後から組み込めるサービス。自前で作るときのコスト・時間・リスクを避けられる。</p>
+
+  <nav class="overview" aria-label="全体像">
+    <ol>
+      <li><a href="#pair-1">対応する標準</a></li>
+      <li><a href="#pair-2">Universal Login</a></li>
+      <li><a href="#pair-3">接続の種類</a></li>
+      <li><a href="#pair-4">Actions</a></li>
+      <li><a href="#pair-5">料金</a></li>
+    </ol>
+    <p class="label">全体像。箱を押すと、そのペアへ移動します。</p>
+  </nav>
+
+  <div class="controls">
+    <button type="button" id="toggle-all">すべて表示</button>
+    <span class="status" id="status" role="status"></span>
+  </div>
+
+  <section class="pair" id="pair-1" data-kind="main">
+    <div class="count">1 / 5</div>
+    <div class="abstract">
+      <p>Auth0 は OAuth 2.0、<button type="button" class="term">OpenID Connect<span class="def" role="tooltip">OAuth 2.0 の上に作られた、ユーザーを認証するための層。</span></button>、SAML に対応している。</p>
+      <button type="button" class="pair-toggle" aria-controls="pair-1-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-1-concrete">
+      <div class="label">値の表</div>
+      <figure>
+        <table>
+          <thead><tr><th>標準</th><th>ドキュメントでの使われ方</th></tr></thead>
+          <tbody>
+            <tr><td>OAuth 2.0</td><td>API を保護する</td></tr>
+            <tr><td>OpenID Connect</td><td>ユーザーを認証する。JWT を使う</td></tr>
+            <tr><td>SAML</td><td>SAML 認証が必要な Web アプリに使う</td></tr>
+          </tbody>
+        </table>
+        <figcaption>Auth0 Overview と OpenID Connect Protocol のページによる。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="pair" id="pair-2" data-kind="main">
+    <div class="count">2 / 5</div>
+    <div class="abstract">
+      <p>ログイン画面は Universal Login で、Auth0 の認証サーバー上に置かれる。Classic Login は更新が止まっている。</p>
+      <button type="button" class="pair-toggle" aria-controls="pair-2-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-2-concrete">
+      <div class="label">シナリオ</div>
+      <figure>
+        <ol class="steps">
+          <li><span>アプリが、ユーザーを Universal Login へリダイレクトする。</span></li>
+          <li><span>Auth0 の認証サーバー上のページが、ログインの流れを進める。</span></li>
+          <li><span>アプリは、認証の処理を Auth0 に任せる。</span></li>
+        </ol>
+        <figcaption>Universal Login のページによる。開発は Universal Login に集中している。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="pair" id="pair-3" data-kind="main">
+    <div class="count">3 / 5</div>
+    <div class="abstract">
+      <p>ログイン方法は、データベース・ソーシャル・エンタープライズの3種類の接続から選ぶ。</p>
+      <button type="button" class="pair-toggle" aria-controls="pair-3-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-3-concrete">
+      <div class="label">値の表</div>
+      <figure>
+        <table>
+          <thead><tr><th>接続</th><th>ログインの例</th></tr></thead>
+          <tbody>
+            <tr><td>データベース</td><td>ユーザー名・メール・電話番号とパスワード</td></tr>
+            <tr><td>ソーシャル</td><td>Facebook、X などのアカウント</td></tr>
+            <tr><td>エンタープライズ</td><td>AD、LDAP、SAML に対応した社内の ID 基盤</td></tr>
+          </tbody>
+        </table>
+        <figcaption>Auth0 Overview と Pricing のページによる。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="pair" id="pair-4" data-kind="main">
+    <div class="count">4 / 5</div>
+    <div class="abstract">
+      <p>Actions は Node.js で書く関数で、ログイン後などの決まった時点で実行される。</p>
+      <button type="button" class="pair-toggle" aria-controls="pair-4-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-4-concrete">
+      <div class="label">値の表</div>
+      <figure>
+        <table>
+          <thead><tr><th>トリガー</th><th>実行される時点</th></tr></thead>
+          <tbody>
+            <tr><td><code>pre-user-registration</code></td><td>ユーザー登録の前</td></tr>
+            <tr><td><code>post-login</code></td><td>認証のあと、トークンを発行する前</td></tr>
+            <tr><td><code>post-change-password</code></td><td>パスワード変更のあと</td></tr>
+            <tr><td><code>credentials-exchange</code></td><td>マシン間通信で、アクセストークンを返す前</td></tr>
+          </tbody>
+        </table>
+        <figcaption>Actions Overview の表から抜粋。公開されている npm パッケージのほぼすべてを使える。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="pair" id="pair-5" data-kind="main">
+    <div class="count">5 / 5</div>
+    <div class="abstract">
+      <p>無料プランは月間アクティブユーザー25,000人まで使える。有料プランは月35ドルから。</p>
+      <button type="button" class="pair-toggle" aria-controls="pair-5-concrete" aria-label="証拠を開閉">−</button>
+    </div>
+    <div class="concrete" id="pair-5-concrete">
+      <div class="label">数値・事実</div>
+      <figure>
+        <div class="facts">
+          <div><strong>$0</strong>Free。25,000 MAU まで</div>
+          <div><strong>$35〜</strong>Essentials（B2C、月額）</div>
+          <div><strong>$240〜</strong>Professional（B2C、月額）</div>
+        </div>
+        <figcaption>Pricing のページ（2026年11月10日に参照）による。B2B はそれぞれ $150〜、$800〜。</figcaption>
+      </figure>
+    </div>
+  </section>
+  <h2>出典</h2>
+  <ul>
+    <li><a href="https://auth0.com/docs/get-started/auth0-overview">Auth0 Docs: Auth0 Overview</a></li>
+    <li><a href="https://auth0.com/docs/authenticate/login/auth0-universal-login">Auth0 Docs: Universal Login</a></li>
+    <li><a href="https://auth0.com/docs/customize/actions/actions-overview">Auth0 Docs: Actions Overview</a></li>
+    <li><a href="https://auth0.com/docs/authenticate/protocols/openid-connect-protocol">Auth0 Docs: OpenID Connect Protocol</a></li>
+    <li><a href="https://auth0.com/pricing">Auth0 Pricing（2026年11月10日に参照）</a></li>
+  </ul>
+</main>
+
+<!-- ここから下は変えない。JS が動かない環境では、証拠は開いたまま表示される -->
+<script>
+(function () {
+  var pairs = Array.prototype.slice.call(document.querySelectorAll('.pair'));
+  var allButton = document.getElementById('toggle-all');
+  var status = document.getElementById('status');
+  var showingAll = false;
+
+  function setOpen(pair, open) {
+    var toggle = pair.querySelector('.pair-toggle');
+    pair.querySelector('.concrete').hidden = !open;
+    toggle.textContent = open ? '−' : '+';
+    toggle.setAttribute('aria-expanded', String(open));
+  }
+  function isOpen(pair) { return !pair.querySelector('.concrete').hidden; }
+
+  function sync() {
+    var opened = pairs.filter(isOpen).length;
+    showingAll = opened === pairs.length;
+    allButton.textContent = showingAll ? '抽象だけ表示' : 'すべて表示';
+    status.textContent = showingAll
+      ? 'すべての証拠を表示しています。'
+      : opened === 0
+        ? '抽象だけの1分版を表示しています。抽象を押すと、その証拠が開きます。'
+        : pairs.length + ' 組のうち ' + opened + ' 組の証拠を開いています。';
+  }
+
+  function setAll(open) {
+    pairs.forEach(function (pair) { setOpen(pair, open); });
+    sync();
+  }
+
+  function closeTerms(except) {
+    document.querySelectorAll('.term.open').forEach(function (term) {
+      if (term !== except) term.classList.remove('open');
+    });
+  }
+
+  pairs.forEach(function (pair) {
+    pair.querySelector('.abstract').addEventListener('click', function (event) {
+      if (event.target.closest('.term')) return;
+      if (String(window.getSelection()).length) return;
+      setOpen(pair, !isOpen(pair));
+      sync();
+    });
+  });
+
+  document.addEventListener('click', function (event) {
+    var term = event.target.closest('.term');
+    closeTerms(term);
+    if (term) term.classList.toggle('open');
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') closeTerms(null);
+  });
+
+  allButton.addEventListener('click', function () { setAll(!showingAll); });
+
+  function openFromHash() {
+    var target = location.hash && document.getElementById(location.hash.slice(1));
+    if (target && target.classList.contains('pair')) { setOpen(target, true); sync(); }
+  }
+  window.addEventListener('hashchange', openFromHash);
+  document.querySelectorAll('.overview a').forEach(function (link) {
+    link.addEventListener('click', function () {
+      var target = document.getElementById(link.getAttribute('href').slice(1));
+      if (target) { setOpen(target, true); sync(); }
+    });
+  });
+
+  setAll(false);
+  openFromHash();
+})();
+</script>

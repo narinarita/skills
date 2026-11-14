@@ -35,6 +35,12 @@ npx degit narinarita/skills/<スキル名> ~/.claude/skills/<スキル名>
 | --- | --- |
 | [cleanup-merged](cleanup-merged/) | PR がマージされた後のブランチと git worktree を、既定ブランチに入っているか確かめてから片付ける。 |
 
+### Herdr
+
+| スキル | 説明 |
+| --- | --- |
+| [herdr-pane](herdr-pane/) | Herdr アプリで、自分の子として Claude を起動して右か下のペインに出し、最初の指示を渡す。サイドバーでは実行元の下にツリー状に並ぶ。 |
+
 ## 開発
 
 ```bash
